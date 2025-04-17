@@ -64,3 +64,7 @@ Quantity: how many you own (editable via the interface)
 Probabilities for faces 1 to 6 (and optionally 0 for joker face)
 
 The last die must be the normal die, which is always available in quantity 6 and cannot be modified.
+
+## Author
+Developed by Almikun.
+This is a fan-made project and is not affiliated with Warhorse Studios or KCD2.
