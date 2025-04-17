@@ -101,7 +101,6 @@ def get_probas_score(dice_indices, score_of_combi, proba_array):
         score_probabilities[score] += proba
     return score_probabilities
 
-
 def get_dices_sets(current_set, die_index, remaining, base_df):
     if remaining == 0:
         return [current_set.copy()]
@@ -127,34 +126,25 @@ def get_dices_sets(current_set, die_index, remaining, base_df):
 def expectation_calculation(score_proba):
     return sum(score*proba for score, proba in score_proba.items())
 
-def getNeighbors(dices_indices, base_df):
-    neighbors = []
-    available_dices = set(base_df.index).difference(set(dices_indices))
-    for i in range(len(dices_indices)):
-        for dice in available_dices:
-            neigh = dices_indices.copy()
-            neigh[i] = dice
-            neighbors.append(neigh)
-    return neighbors
 
 #################################################################################
 
 def main():
-    st.title(f"Dice Optimizer for KCD2  /// {str(np.random.randint(0,10000))}")
+    st.title(f"Dice Optimizer for KCD2 ")
 
-    # Initialise la session une seule fois
+    # Initialize session once
     if "validated" not in st.session_state:
         st.session_state.validated = False
 
     base_df = pd.read_csv("dice.csv")
 
     if not st.session_state.validated:
-        st.subheader("Indique combien de dés vous possédez pour chaque type :")
+        st.subheader("Indicate how many dice of each type you own :")
         updated_quantities = []
 
-        # Conteneur pour les inputs
+        # Container for inputs
         with st.form("form_dice"):
-            # Tous les dés sauf le dernier
+            # All dice except the last one
             for i, row in base_df[:-1].iterrows():
                 qty = st.number_input(
                     label=f"{row['Name']}",
@@ -165,7 +155,7 @@ def main():
                 )
                 updated_quantities.append(qty)
 
-            # Dé normal bloqué à 6
+            # Normal die fixed to 6
             st.markdown("### Normal Die")
             qty = st.number_input(
                 label="Normal Die",
@@ -177,25 +167,25 @@ def main():
             )
             updated_quantities.append(qty)
 
-            # Bouton de validation
-            submitted = st.form_submit_button("Valider mes dés")
+            # Confirmation button
+            submitted = st.form_submit_button("Validate my dices")
             if submitted:
                 base_df["Quantity"] = updated_quantities
                 st.session_state.validated = True
-                st.session_state.base_df = base_df.copy()  # stocker si besoin plus tard
+                st.session_state.base_df = base_df.copy()
                 st.rerun()
 
     else:
         st.info("Computation ongoing, information will appear")
         start = perf_counter_ns()
-        print("\nCréation des sets de dés")
+        print("\nCreating all possible dice sets")
         all_dices_sets = get_dices_sets([], 0, 6, st.session_state.base_df)
         print(len(all_dices_sets))
         st.info(f"{len(all_dices_sets)} different dice sets generated")
         print(f"{((perf_counter_ns() - start)*1e-9):2f} s")
 
         start = perf_counter_ns()
-        print("\nImportation des combinaisons")
+        print("\nLoading scoring combinations")
         score_of_combi = get_scores_combis()
         print(len(score_of_combi))
         st.info(f"{len(score_of_combi)} scoring combinations considered")
@@ -205,14 +195,14 @@ def main():
         proba_array = st.session_state.base_df.iloc[:, 2:].to_numpy()
         probas = get_probas_score([idx_normal_dice]*6, score_of_combi, proba_array)
         exp_score = expectation_calculation(probas)
-        print(f"\r\n\nLe set de base a une espérance de {exp_score:.2f}")
+        print(f"\r\n\nBase set expected score: {exp_score:.2f}")
         st.info(f"The base set has an expected score of {exp_score:.2f}")
 
         start = perf_counter_ns()
-        print(f"\nAlgo génétique ")
-        st.info("Genetic algorithm started (up to 5 minutes)")
+        print(f"\nRunning genetic algorithm")
+        st.info("Genetic algorithm started (up to 5 minutes or stagnation 30)")
         best_solution, best_score = algo_genetique(score_of_combi, st.session_state.base_df, max_time=300, max_stag=30, streamlit_log=st.empty().text)
-        st.info(f"Execution time : {round((perf_counter_ns() - start)*1e-9, 2)} s")
+        st.info(f"Execution time: {round((perf_counter_ns() - start)*1e-9, 2)} s")
         st.info(f"The best set has an expected score of {best_score:.2f}")
         st.info(f"Best set: {', '.join(st.session_state.base_df.iloc[best_solution, 0].values)}")
         print(f"{((perf_counter_ns() - start)*1e-9):2f} s\n")

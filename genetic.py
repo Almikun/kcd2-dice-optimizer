@@ -5,10 +5,9 @@ import pandas as pd
 import random
 from collections import defaultdict, Counter
 
-
 # HYPERPARAMETERS
 GENERATION_SIZE = 25
-SELECTION_SIZE = 12 # must be pair
+SELECTION_SIZE = 12  # must be even
 PROBA_CROISEMENT = 0.8
 PROBA_MUTATION = 1/6
 
@@ -48,7 +47,7 @@ def evaluation_solution(dice_indices, score_of_combi, proba_array):
             if proba == 0:
                 break
         score_probabilities[score] += proba
-    expected_score = sum(score*proba for score, proba in score_probabilities.items())
+    expected_score = sum(score * proba for score, proba in score_probabilities.items())
     memo_expect_sol[tuple(dice_indices)] = expected_score
     return expected_score
 
@@ -121,7 +120,6 @@ def log(msg, streamlit_log=None):
     if streamlit_log:
         streamlit_log(msg)
 
-
 def algo_genetique(score_of_combi, base_df, max_time=61, max_stag=11, streamlit_log=None):
     max_time *= 1e9
     best_tracking = []
@@ -130,10 +128,10 @@ def algo_genetique(score_of_combi, base_df, max_time=61, max_stag=11, streamlit_
     proba_array = base_df.iloc[:, 2:].to_numpy()
     population = initialisation_population(base_df)
     best_solution, best_score = selection_survie(population, score_of_combi, proba_array)[0]
-    time_cnt=1
-    stag_cnt=0
+    time_cnt = 1
+    stag_cnt = 0
     while stag_cnt <= max_stag and perf_counter_ns() - start <= max_time:
-        log(f"\rGénération n°{time_cnt} (stag={stag_cnt})", streamlit_log)
+        log(f"\rGeneration #{time_cnt} (stagnation={stag_cnt})", streamlit_log)
         best_tracking.append([best_score])
         selection = selection_reproduction(population, score_of_combi, proba_array)
         new_gen = croisement(selection, base_df)
@@ -142,24 +140,27 @@ def algo_genetique(score_of_combi, base_df, max_time=61, max_stag=11, streamlit_
         population = selection_survie(population, score_of_combi, proba_array)
         gen_best_sol, gen_best_score = population[0]
         population = [x[0] for x in population]
-        stag_cnt+=1
+        stag_cnt += 1
         if gen_best_score > best_score:
             best_solution = gen_best_sol
             best_score = gen_best_score
             stag_cnt = 0
         stag_tracking.append(stag_cnt)
-        time_cnt+=1
+        time_cnt += 1
 
     best_solution = sorted(best_solution)
-    print(f"\r\n\nLe meilleur set a une espérance de {best_score:.2f}")
-    print(f"Meilleure solution : {best_solution}")
-    print(f"Meilleur set : {', '.join(base_df.iloc[best_solution, 0].values)}\n")
+    print(f"\r\n\nBest set has an expected score of {best_score:.2f}")
+    print(f"Best solution (indices): {best_solution}")
+    print(f"Best set: {', '.join(base_df.iloc[best_solution, 0].values)}\n")
+
+    # Debug tracking (optional)
     # print(best_tracking)
-    # plt.plot(range(1, time_cnt),best_tracking)
+    # plt.plot(range(1, time_cnt), best_tracking)
     # plt.show()
 
+    # Debug stagnation (optional)
     # print(stag_tracking)
     # plt.plot(stag_tracking)
     # plt.show()
-    return best_solution, best_score
 
+    return best_solution, best_score
